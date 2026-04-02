@@ -1,173 +1,71 @@
 # TaskHub
 
-TaskHub is a modern collaborative project management platform built with FastAPI, Next.js, and PostgreSQL. It allows teams to create workspaces, manage projects and tasks, assign members, upload files, and visualize insights — all with real-time notifications and secure authentication.
+## Overview
+TaskHub is a multi-tenant project management system for tracking tasks and team collaboration. It organizes work into a hierarchy of Workspaces, Projects, and Tasks, providing data isolation and role-based access control.
 
-## Features
+## Architecture
+The system consists of three main components:
+- **Backend**: A FastAPI REST API that handles business logic, authentication, and data persistence.
+- **Frontend**: A Next.js application using the App Router for UI and React Query for server state management.
+- **Database**: PostgreSQL for relational storage of users, workspaces, and task data.
 
-### Authentication
+## Key Engineering Decisions
+- **Multi-tenancy via Workspaces**: Data isolation is enforced at the workspace level. All projects and tasks are scoped to a specific workspace to ensure users only see data relevant to their organization.
+- **Stateless Authentication**: JWT-based authentication is used to keep the backend stateless, allowing for easier scaling and avoiding server-side session overhead.
+- **ORM Optimization**: SQLAlchemy is used for database interactions. To prevent N+1 query problems, the system utilizes `joinedload` and `subqueryload` for efficient retrieval of nested relationships (e.g., projects within a workspace).
+- **Rate Limiting**: Integrated SlowAPI on authentication and sensitive endpoints to protect against brute-force attacks and automated abuse.
+- **Audit Logging**: A centralized `ActivityLog` records all major state changes (e.g., task status updates, project archiving) to provide a complete history of system actions.
 
-* Email sign-up with verification
-* Sign-in with Two-Factor Authentication (2FA)
-* Forgot & reset password functionality
-
-### Workspaces
-
-* Create and manage workspaces
-* Invite members to workspaces
-* Role-based access (Owner, Manager, Contributor, Viewer)
-
-### Projects
-
-* Create projects within a workspace
-* Assign members to projects
-* Change project statuses with rules (all tasks completed before marking done)
-* Archive/unarchive projects
-
-### Tasks & Subtasks
-
-* Create tasks and subtasks
-* Assign tasks to members
-* Track task progress & statuses
-* Upload files/attachments for tasks# TaskHub
-
-TaskHub is a modern collaborative project management platform built with FastAPI, Next.js, and PostgreSQL. It allows teams to create workspaces, manage projects and tasks, assign members, upload files, and visualize insights — all with real-time notifications and secure authentication.
-
-## Features
-
-### Authentication
-
-* Email sign-up with verification
-* Sign-in with Two-Factor Authentication (2FA)
-* Forgot & reset password functionality
-
-### Workspaces
-
-* Create and manage workspaces
-* Invite members to workspaces
-* Role-based access (Owner, Manager, Contributor, Viewer)
-
-### Projects
-
-* Create projects within a workspace
-* Assign members to projects
-* Change project statuses with rules (all tasks completed before marking done)
-* Archive/unarchive projects
-
-### Tasks & Subtasks
-
-* Create tasks and subtasks
-* Assign tasks to members
-* Track task progress & statuses
-* Upload files/attachments for tasks
-* Manage priorities, tags, and watchers
-
-### Dashboard & Insights
-
-* Visualize workspace data
-* Monitor progress across projects
-* Track completion rates and productivity
-
-### Members Management
-
-* Manage member roles and permissions
-* View workspace members list
-
-### Live Notifications
-
-* Real-time updates using WebSockets
-* Get notified on project updates, assignments, and status changes
+## Features (Backend)
+- **Workspace Isolation**: Logical partitioning of data; membership is required to access workspace resources.
+- **Role-Based Access Control (RBAC)**: Permission levels (Owner, Admin, Member, Viewer) manage user actions within workspaces and projects.
+- **Task Management Engine**: Supports priorities, status workflows, due dates, and multiple assignees per task.
+- **Notification System**: Generates system-wide alerts for task assignments and mentions.
+- **Secure Registration**: Email-based OTP (One-Time Password) verification for user onboarding and password recovery.
+- **Audit Trail**: Persistent tracking of user actions across the platform.
 
 ## Tech Stack
+- **Backend**: FastAPI, SQLAlchemy, Pydantic, PyJWT, SlowAPI.
+- **Database**: PostgreSQL.
+- **Frontend**: Next.js, TailwindCSS, Shadcn UI, React Query.
+- **Deployment**: Docker, Docker Compose.
 
-* **Backend:** FastAPI (Python)
-* **Frontend:** Next.js + TailwindCSS
-* **Database:** PostgreSQL
-* **Realtime:** WebSockets
+## Workflow / API
+1. **Authentication**: User registration triggers an OTP email. Verification is required before the first login, which issues a JWT.
+2. **Workspace Management**: Users create workspaces (becoming the Owner) and invite others. Invitations are managed via a dedicated invite model and email flow.
+3. **Project Execution**: Projects are created within workspaces. Tasks are then added to projects, assigned to members, and tracked through status transitions.
+4. **Activity & Notifications**: System actions trigger `ActivityLog` entries and `Notification` records for relevant users.
 
-## Images
+## Challenges & Solutions
+- **Relational Complexity**: Managing the many-to-many relationships between users, workspaces, and projects while maintaining performance. **Solution**: Optimized database queries using Eager Loading and selective column fetching to minimize payload size and database load.
+- **Access Control Enforcement**: Ensuring consistent permission checks across multiple resource types. **Solution**: Implemented reusable FastAPI dependencies that verify user roles and resource ownership before executing route logic.
+- **Email Reliability**: Managing OTP delivery and verification flows. **Solution**: Built a structured mailer utility with error handling and logging to ensure visibility into delivery status.
 
-![Home Page](Images/Screenshot%202025-09-08%20210238.png)
+## How to Run
+### Using Docker (Recommended)
+1. Clone the repository.
+2. Create a `.env` file in the root directory with the following variables:
+   ```env
+   DATABASE_URL=postgresql://user:password@db:5432/taskhub
+   JWT_SECRET=your_jwt_secret
+   ALGORITHM=HS256
+   FRONTEND_URL=http://localhost:3000
+   # SMTP configuration for email/OTP
+   ```
+3. Run `docker-compose up --build`.
+4. Access the frontend at `http://localhost:3000` and the backend at `http://localhost:8000`.
 
-![Dashboard 1](Images/Screenshot%202025-09-08%20210812.png)
-
-![Dashboard 2](Images/Screenshot%202025-09-08%20210854.png)
-
-![Workspace](Images/Screenshot%202025-09-08%20212141.png)
-
-![Projects](Images/Screenshot%202025-09-08%20224602.png)
-
-
-## Installation & Setup
-
-### Prerequisites
-
-* Python 3.10+
-* Node.js 18+
-* PostgreSQL
-
-### Backend (FastAPI)
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python app.py
-
-### Frontend (Next.js)
-cd frontend
-npm install
-npm run dev
-
-### Database (PostgreSQL)
-1. Create database named **'taskhub'**.
-2. Update the connection details in backend.
-3. Run migrations (if using Alembic or similar)
-
-.
-├── backend
-│   ├── app.py
-│   ├── config.py
-│   ├── routes
-│   │   ├── task.py
-│   │   └── ...
-│   └── schema
-│       └── workspace.py
-├── frontend
-│   ├── app
-│   │   ├── (protected)
-│   │   │   └── workspaces
-│   │   │       └── [WorkSpaceid]
-│   │   │           └── projects
-│   │   │               └── [Projectid]
-│   │   │                   └── tasks
-│   │   │                       └── [TasksId]
-│   │   │                           └── page.js
-│   │   └── layout.js
-│   ├── components
-│   │   ├── dashboard
-│   │   │   ├── RecentProjects.js
-│   │   │   └── StackedTaskChart.js
-│   │   ├── layout
-│   │   │   └── SidebarComponent.js
-│   │   ├── tasks
-│   │   │   └── CreateTaskDialog.js
-│   │   ├── ui
-│   │   │   ├── card.jsx
-│   │   │   └── select.jsx
-│   │   └── workspace
-│   │       └── project
-│   │           └── CreateProjectDialog.js
-│   ├── hooks
-│   ├── lib
-│   ├── package.json
-│   └── provider
-│       └── query-provider.js
-├── .gitignore
-└── README.md
-
-## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you’d like to change.
-
-## License
-TaskHub is licensed under the MIT License.
+### Manual Setup
+- **Backend**:
+  ```bash
+  cd backend
+  pip install -r requirements.txt
+  python app.py
+  ```
+- **Frontend**:
+  ```bash
+  cd frontend
+  npm install
+  npm run dev
+  ```
+- **Database**: Ensure a PostgreSQL instance is running and matches the configuration in your `.env` file.
