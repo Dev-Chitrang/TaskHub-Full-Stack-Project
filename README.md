@@ -28,7 +28,13 @@ The system consists of three main components:
 - **Backend**: FastAPI, SQLAlchemy, Pydantic, PyJWT, SlowAPI.
 - **Database**: PostgreSQL.
 - **Frontend**: Next.js, TailwindCSS, Shadcn UI, React Query.
+- **Testing**: pytest, httpx.
+- **CI/CD**: GitHub Actions.
 - **Deployment**: Docker, Docker Compose.
+
+## Testing & CI/CD
+- **Automated Testing**: The project includes a test suite for backend routes and authentication logic using `pytest`. Detailed testing documentation can be found in [TESTING.md](TESTING.md).
+- **CI/CD Pipeline**: GitHub Actions are configured to automatically run tests and lint the code on every push and pull request. See [.github/workflows/ci.yml](.github/workflows/ci.yml) for the workflow configuration.
 
 ## Workflow / API
 1. **Authentication**: User registration triggers an OTP email. Verification is required before the first login, which issues a JWT.
