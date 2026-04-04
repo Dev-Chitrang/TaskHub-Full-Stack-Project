@@ -36,12 +36,18 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     )
 
 # Database connection check
-try:
-    ps.connect(os.getenv('DATABASE_URL'))
-    print("Database connection successful")
-except Exception as e:
-    print(e)
-    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database connection failed")
+db_url = os.getenv('DATABASE_URL')
+if db_url and db_url.startswith("postgresql"):
+    try:
+        ps.connect(db_url)
+        print("Database connection successful")
+    except Exception as e:
+        print(f"PostgreSQL connection failed: {e}")
+        # Only raise if we're not in a test environment
+        if os.getenv("TESTING") != "True":
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database connection failed")
+else:
+    print("Skipping PostgreSQL connection check (SQLite or missing URL)")
 
 # Create DB tables
 Base.metadata.create_all(bind=engine)

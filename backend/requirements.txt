@@ -15,3 +15,5 @@ orjson
 python-multipart
 py3-validate-email
 disposable-email-domains
+pytest 
+httpx

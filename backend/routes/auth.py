@@ -199,8 +199,8 @@ async def login(request: Request, payload: LoginSchema, db: Session = Depends(ge
 
         if not user.isEmailVerified:
             return ORJSONResponse(
-                status_code=400,
-                content={"message": "Please verify your email before logging in."},
+                status_code=401,
+                content={"message": "Please verify your email first"},
             )
 
         if not bcrypt.checkpw(password.encode("utf-8"), user.password.encode("utf-8")):
